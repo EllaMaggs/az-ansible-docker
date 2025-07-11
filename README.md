@@ -52,12 +52,6 @@ azure-ansible-docker/
 - [x] **Static Website**: Served on port 8080
 - [x] **Persistent Storage**: Volume-mounted web content
 
-### Security Features
-- [x] **SSH Access**: Key-based auth only (port 22)
-- [x] **Network Policies**: HTTP restricted to port 8080
-- [x] **Container Isolation**: Process sandboxing
-- [x] **Self-Healing**: Auto-restart policy
-
 ### Monitoring Stack
 
 - [x] **Prometheus**: Scrapes metrics from Node Exporter and cAdvisor (port 9090)
@@ -68,7 +62,7 @@ azure-ansible-docker/
 
 ## What scalability could look like
 
-100 VMs → Multiple Containers per VM → Microservices (Web, DB Cache) → Load Balanced Website + Customised Monitoring Stack
+100 VMs → Container Orchestration → Microservices (Web, DB Cache) → Load Balanced Website + Customised Monitoring Stack
 
 ### Scaling
 - [ ] **Horizontal**: VM Scale Sets + Azure Load Balancer  
@@ -83,7 +77,7 @@ azure-ansible-docker/
 ### Orchestration
 - [ ] **Container Management**: Docker Swarm/AKS
 - [ ] **Auto-Scaling**: Pod/node autoscaling
-- [ ] **CI/CD Pipeline**: Automated rolling updates
+- [ ] **CI/CD Pipeline**: Contionous deployments
 
 ## Troubleshooting
 
@@ -104,76 +98,9 @@ azure-ansible-docker/
    ssh adminuser@your-vm-ip 'docker logs apache-httpd'
    ```
 
-## Roadmap (short-term)
-
-- [ ] Custom Docker Image & Nginx Reverse Proxy
-- [ ] Configure alerting for critical metrics
-- [ ] Implement Azure Key Vault for secrets
-
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
-
-## 🔄 Internal vs External Ports in Docker
-
-### **External Port (Host Port)**
-- **What it is**: The port on your **host machine** (your VM)
-- **Example**: `-p 8080:80` means port `8080` on your VM
-- **Access**: `http://172.167.66.20:8080` (from outside)
-- **Purpose**: How the outside world reaches your container
-
-### **Internal Port (Container Port)**
-- **What it is**: The port **inside the container** where the app runs
-- **Example**: `-p 8080:80` means port `80` inside the container
-- **Access**: `http://localhost:80` (from inside the container)
-- **Purpose**: Where your application actually listens
-
-## 🚨 Port Issues You Encountered in This Project
-
-### **1. cAdvisor Port Mismatch**
-```yaml
-# Your cAdvisor container:
--p 8081:8080  # External:Internal
-
-# Your Prometheus config (WRONG):
-- targets: ['cadvisor:8080']  # Should be internal port 8080
-```
-
-**The Problem**: Prometheus was trying to reach cAdvisor on the wrong port within the Docker network.
-
-### **2. Docker Network Communication**
-```yaml
-# Some containers had --network monitoring
-# Others didn't, causing communication failures
-```
-
-**The Problem**: Containers couldn't talk to each other because they weren't on the same network.
-
-### **3. Port Conflicts**
-Your setup had these ports:
-- **Apache**: `8080:80` (web server)
-- **Prometheus**: `9090:9090` (monitoring)
-- **Node Exporter**: `9100:9100` (metrics)
-- **cAdvisor**: `8081:8080` (container metrics)
-- **Grafana**: `3000:3000` (dashboard)
-
-**The Problem**: If any two containers tried to use the same external port, Docker would fail to start them.
-
-### **4. Prometheus Target Configuration**
-The biggest issue was in your `prometheus.yml`:
-```yaml
-<code_block_to_apply_changes_from>
-```
-
-## 💡 Key Lessons from Your Project
-
-1. **Always use internal ports** when containers communicate within Docker networks
-2. **Use external ports** when accessing from outside (browser, SSH)
-3. **Keep containers on the same network** for internal communication
-4. **Double-check port mappings** - they're the most common Docker issue
-5. **Test connectivity** between containers before assuming they work
-
-This is why you had "a lot of issues with different ports" - Docker networking can be tricky when you mix internal and external port references!
